@@ -9,7 +9,7 @@ import math
 import networkx as nx
 import numpy as np
 import pandas as pd
-from tqdm import tqdm  # progress bar
+from tqdm.auto import tqdm  # progress bar
 
 from .utils import _azimuth
 
@@ -323,6 +323,7 @@ class StreetAlignment:
         )
 
         self.series = np.abs(merged[orientations] - merged["_orientation"])
+        self.series.index = left.index
 
 
 class CellAlignment:

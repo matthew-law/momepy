@@ -16,6 +16,7 @@ elements
 
    Blocks
    buffered_limit
+   COINS
    enclosures
    get_network_id
    get_network_ratio
@@ -149,7 +150,6 @@ preprocessing
    extend_lines
    remove_false_nodes
    preprocess
-   snap_street_network_edge
 
 
 utilities

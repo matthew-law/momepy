@@ -42,7 +42,7 @@ autodoc_mock_imports = [
 # -- Project information -----------------------------------------------------
 
 project = "momepy"
-copyright = "2018-2020, Martin Fleischmann"
+copyright = "2018-2021, Martin Fleischmann"
 author = "Martin Fleischmann"
 
 # The short X.Y version
@@ -74,6 +74,7 @@ extensions = [
     "matplotlib.sphinxext.plot_directive",
     "IPython.sphinxext.ipython_console_highlighting",
     "myst_parser",
+    "sphinx_copybutton",
 ]
 
 # nbsphinx do not use requirejs (breaks bootstrap)
@@ -108,6 +109,7 @@ pygments_style = "sphinx"
 
 # path to bib file with references
 bibtex_bibfiles = ["_static/references.bib"]
+bibtex_reference_style = "author_year"
 
 # -- Options for HTML output -------------------------------------------------
 

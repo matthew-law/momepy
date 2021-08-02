@@ -11,7 +11,7 @@ import pandas as pd
 from scipy.spatial import Voronoi
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import polygonize
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 # TODO: this should not be needed with shapely 2.0
 from geopandas._vectorized import _pygeos_to_shapely
@@ -713,12 +713,10 @@ def get_network_id(left, right, network_id, min_size=100, verbose=True):
         right["mm_nid"] = network_id
         network_id = "mm_nid"
 
-    print("Generating centroids...") if verbose else None
     buildings_c = left.copy()
 
     buildings_c[buildings_c.geometry.name] = buildings_c.centroid  # make centroids
 
-    print("Generating rtree...") if verbose else None
     idx = right.sindex
 
     # TODO: use sjoin nearest once done
@@ -743,7 +741,7 @@ def get_network_id(left, right, network_id, min_size=100, verbose=True):
         else:
             result.append(nid)
 
-    series = pd.Series(result)
+    series = pd.Series(result, index=left.index)
 
     if series.isnull().any():
         import warnings
@@ -946,7 +944,11 @@ def get_network_ratio(df, edges, initial_buffer=500):
 
 
 def enclosures(
-    primary_barriers, limit=None, additional_barriers=None, enclosure_id="eID"
+    primary_barriers,
+    limit=None,
+    additional_barriers=None,
+    enclosure_id="eID",
+    clip=False,
 ):
     """
     Generate enclosures based on passed barriers.
@@ -971,6 +973,9 @@ def enclosures(
         (Multi)LineString geometry is expected.
     enclosure_id : str (default 'eID')
         name of the enclosure_id (to be created).
+    clip : bool (default False)
+        if True, the enclosures will be clipped to the extent of the limit (if given).
+        Requires ``limit`` composed of Polygon or MultiPolygon geometries.
 
     Returns
     -------
@@ -984,8 +989,10 @@ def enclosures(
     """
     if limit is not None:
         if limit.geom_type.isin(["Polygon", "MultiPolygon"]).any():
-            limit = limit.boundary
-        barriers = pd.concat([primary_barriers.geometry, limit.geometry])
+            limit_b = limit.boundary
+        else:
+            limit_b = limit
+        barriers = pd.concat([primary_barriers.geometry, limit_b.geometry])
     else:
         barriers = primary_barriers
     unioned = barriers.unary_union
@@ -1032,8 +1039,21 @@ def enclosures(
             .reset_index(drop=True)
         ).set_crs(primary_barriers.crs)
 
-        return gpd.GeoDataFrame(
+        final_enclosures = gpd.GeoDataFrame(
             {enclosure_id: range(len(final_enclosures))}, geometry=final_enclosures
         )
 
-    return gpd.GeoDataFrame({enclosure_id: range(len(enclosures))}, geometry=enclosures)
+    else:
+        final_enclosures = gpd.GeoDataFrame(
+            {enclosure_id: range(len(enclosures))}, geometry=enclosures
+        )
+
+    if clip and limit is not None:
+        if not limit.geom_type.isin(["Polygon", "MultiPolygon"]).all():
+            raise TypeError(
+                "`limit` requires a GeoDataFrame or GeoSeries with Polygon or "
+                "MultiPolygon geometry to be used with clip=True."
+            )
+        return gpd.clip(final_enclosures, limit)
+
+    return final_enclosures
